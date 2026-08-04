@@ -1,0 +1,12 @@
+{
+  "primary_admin": {
+    "role": "Super Admin",
+    "chat_id": "",
+    "permissions": ["all"]
+  },
+  "secondary_admin": {
+    "role": "Regional Verifier",
+    "chat_id": "",
+    "permissions": ["view_applications", "process_approvals"]
+  }
+}
