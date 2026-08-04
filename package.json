@@ -1,0 +1,13 @@
+{
+  "name": "loan-app-backend",
+  "version": "1.0.0",
+  "description": "Loan Application Server with Telegram Webhook Integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "node-fetch": "^2.7.0"
+  }
+}
